@@ -210,78 +210,50 @@ document.addEventListener('DOMContentLoaded', () => {
     // —————————————————————
     // 7. Contact Form Handling
     // —————————————————————
-    const contactForm = document.getElementById('contactForm');
+const contactForm = document.getElementById('contactForm');
 
-    if (contactForm) {
-        contactForm.addEventListener('submit', function (e) {
-            e.preventDefault();
+if (contactForm) {
+    contactForm.addEventListener('submit', async function(e) {
+        e.preventDefault(); // Prevents page refresh/redirection
 
-            // Get form data
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
+        const submitBtn = contactForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
 
-            // Simple validation
-            let isValid = true;
-            const inputs = this.querySelectorAll('[required]');
+        // Visual loading indicator
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Sending...</span> <i class="fas fa-spinner fa-spin"></i>';
 
-            inputs.forEach(input => {
-                if (!input.value.trim()) {
-                    isValid = false;
-                    input.style.borderColor = '#e74c3c';
-                } else {
-                    input.style.borderColor = '';
+        try {
+            const formData = new FormData(contactForm);
+            
+            const response = await fetch(contactForm.action, {
+                method: contactForm.method,
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
                 }
             });
 
-            if (!isValid) {
-                // Show error feedback
-                const existingError = this.querySelector('.form__error');
-                if (!existingError) {
-                    const errorMsg = document.createElement('p');
-                    errorMsg.className = 'form__error';
-                    errorMsg.style.cssText = 'color: #e74c3c; font-size: 0.85rem; margin-top: -12px; margin-bottom: 16px;';
-                    errorMsg.textContent = 'Please fill in all required fields.';
-                    this.insertBefore(errorMsg, this.querySelector('.btn'));
-                }
-                return;
-            }
-
-            // Remove error if exists
-            const errorMsg = this.querySelector('.form__error');
-            if (errorMsg) errorMsg.remove();
-
-            // Simulate sending
-            const submitBtn = this.querySelector('.btn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-            submitBtn.disabled = true;
-
-            setTimeout(() => {
-                // Success state
-                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Message Sent!';
-                submitBtn.style.background = '#27ae60';
-                submitBtn.style.borderColor = '#27ae60';
-
-                // Reset form
+            if (response.ok) {
+                alert('Thank you! Your message has been sent successfully.');
                 contactForm.reset();
-
-                // Reset button after delay
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.style.background = '';
-                    submitBtn.style.borderColor = '';
-                    submitBtn.disabled = false;
-                }, 3000);
-            }, 1500);
-        });
-
-        // Reset input border on focus
-        contactForm.querySelectorAll('.form__input').forEach(input => {
-            input.addEventListener('focus', () => {
-                input.style.borderColor = '';
-            });
-        });
-    }
+            } else {
+                const data = await response.json();
+                if (data.errors) {
+                    alert('Submission failed: ' + data.errors.map(err => err.message).join(', '));
+                } else {
+                    alert('Oops! There was a problem submitting your message.');
+                }
+            }
+        } catch (error) {
+            alert('Network error. Please check your internet connection and try again.');
+        } finally {
+            // Restore button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+}
 
 
     // —————————————————————
